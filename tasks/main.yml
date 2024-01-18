@@ -14,7 +14,9 @@
     - "{{ ansible_facts['distribution'] | lower }}-{{ ansible_facts['distribution_version'] }}.yml"
   loop_control:
     loop_var: vars_file
-  when: "(vars_file is abs and vars_file is file) or (vars_file is not abs and (role_path ~ '/vars/' ~ vars_file) is file)"
+  when: >
+    (vars_file is abs and vars_file is file) or
+    (vars_file is not abs and (role_path ~ '/vars/' ~ vars_file) is file)
 
 - name: Install ntpsec
   ansible.builtin.package:
@@ -50,8 +52,11 @@
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
-# This installs a variant of NTPSec's own logrotate file which does not bail of the log file does not exist.
-# Since this role not set up a specific log file, this is useful on distributions that install the unchanged upstream file.
+# This installs a variant of NTPSec's own logrotate file
+# which does not bail of the log file does not exist.
+# Since this role not set up a specific log file,
+# this is useful on distributions that install the unchanged upstream file.
+
 - name: Install logrotate file
   ansible.builtin.copy:
     dest: '/etc/logrotate.d/ntpd'
@@ -68,7 +73,9 @@
 
 - name: Set cleanup condition for systemd-timesyncd service
   ansible.builtin.set_fact:
-    cleanup_condition: ansible_service_mgr == 'systemd' and ('loaded' in service_check.stdout) and ntpsec_cleanup_systemd_timesyncd
+    cleanup_condition: ansible_service_mgr == 'systemd' and
+                       ('loaded' in service_check.stdout) and
+                       ntpsec_cleanup_systemd_timesyncd
 
 - name: Stop systemd-timesyncd
   ansible.builtin.service:
