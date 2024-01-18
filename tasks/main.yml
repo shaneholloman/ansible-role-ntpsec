@@ -1,0 +1,117 @@
+---
+# tasks file for roles/shaneholloman.ntpsec
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Gather os specific variables
+  ansible.builtin.include_vars: "{{ vars_file }}"
+  loop:
+    - 'default.yml'
+    - "{{ ansible_facts['os_family'] | lower }}.yml"
+    - "{{ ansible_facts['distribution'] | lower }}.yml"
+    - "{{ ansible_facts['distribution'] | lower }}-{{ ansible_facts['distribution_major_version'] }}.yml"
+    - "{{ ansible_facts['distribution'] | lower }}-{{ ansible_facts['distribution_version'] }}.yml"
+  loop_control:
+    loop_var: vars_file
+  when: "(vars_file is abs and vars_file is file) or (vars_file is not abs and (role_path ~ '/vars/' ~ vars_file) is file)"
+
+- name: Install ntpsec
+  ansible.builtin.package:
+    name: 'ntpsec'
+    state: present
+
+- name: Ensure the configuration directory exists
+  ansible.builtin.file:
+    path: "{{ ntpsec_client_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  notify: 'Restart ntpd'
+
+- name: Configure ntpsec
+  ansible.builtin.template:
+    dest: "{{ ntpsec_client_config_file }}"
+    src: 'ntp.conf.j2'
+    owner: root
+    group: root
+    mode: '0644'
+  notify: 'Check ntpsec status'
+
+- name: Ensure /var/log/ntpsec/ directory exists
+  ansible.builtin.file:
+    path: /var/log/ntpsec/
+    state: directory
+    owner: ntpsec
+    group: ntpsec
+    mode: '0755'
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+# This installs a variant of NTPSec's own logrotate file which does not bail of the log file does not exist.
+# Since this role not set up a specific log file, this is useful on distributions that install the unchanged upstream file.
+- name: Install logrotate file
+  ansible.builtin.copy:
+    dest: '/etc/logrotate.d/ntpd'
+    src: 'logrotate-config.ntpd'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check if systemd-timesyncd service exists
+  ansible.builtin.command: systemctl show --property=LoadState --no-pager systemd-timesyncd
+  register: service_check
+  ignore_errors: true
+  changed_when: false  # noqa command-instead-of-module
+
+- name: Set cleanup condition for systemd-timesyncd service
+  ansible.builtin.set_fact:
+    cleanup_condition: ansible_service_mgr == 'systemd' and ('loaded' in service_check.stdout) and ntpsec_cleanup_systemd_timesyncd
+
+- name: Stop systemd-timesyncd
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    state: stopped
+  when: "'loaded' in service_check.stdout"
+
+- name: Disable systemd-timesyncd
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    enabled: false
+  when: "'loaded' in service_check.stdout"
+
+- name: Mask systemd-timesyncd
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    masked: true
+  when: "'loaded' in service_check.stdout"
+
+- name: Remove dbus-org.freedesktop.timesync1.service symlink
+  ansible.builtin.file:
+    path: /etc/systemd/system/dbus-org.freedesktop.timesync1.service
+    state: absent
+  when: "'loaded' in service_check.stdout"
+
+- name: Enable and start ntpd
+  ansible.builtin.service:
+    name: "{{ ntpsec_client_service_name }}"
+    enabled: true
+    state: "{{ ansible_facts['is_chroot'] | ternary(omit, 'started') }}"
+
+- name: Ensure ntpd is started
+  ansible.builtin.service:
+    name: "{{ ntpsec_client_service_name }}"
+    state: started
+  when: ntpsec_client_service_name is defined
+
+- name: Check ntpsec status
+  ansible.builtin.command:
+    cmd: ntpq -p
+  register: ntpq_output
+  changed_when: false
+
+- name: Print ntpq output
+  ansible.builtin.debug:
+    var: ntpq_output.stdout_lines

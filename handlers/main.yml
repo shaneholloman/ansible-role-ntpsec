@@ -1,0 +1,20 @@
+---
+# handlers file for roles/shaneholloman.ntpsec
+
+- name: Restart ntpd
+  ansible.builtin.service:
+    name: "{{ ntpsec_client_service_name }}"
+    state: restarted
+    enabled: true
+
+- name: Check ntpsec status
+  ansible.builtin.command:
+    cmd: ntpq -p
+  register: ntpq_output
+  changed_when: false
+  listen: Check ntpsec status
+
+- name: Print ntpq output
+  ansible.builtin.debug:
+    var: ntpq_output.stdout_lines
+  listen: Check ntpsec status

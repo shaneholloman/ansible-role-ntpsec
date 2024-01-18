@@ -1,0 +1,5 @@
+ntpsec_client_service_name: 'ntpsec'
+ntpsec_client_config_file: '/etc/ntpsec/ntp.conf'
+ntpsec_client_config_dir: '/etc/ntpsec/ntp.d'
+ntpsec_client_drift_file: '/var/lib/ntpsec/ntp.drift'
+ntpsec_cleanup_systemd_timesyncd: false

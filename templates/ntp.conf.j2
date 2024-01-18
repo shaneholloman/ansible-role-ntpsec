@@ -1,0 +1,14 @@
+{# vim: filetype=ntp.jinja2 #}
+# {{ ansible_managed }}
+
+driftfile "{{ ntpsec_client_drift_file }}"
+
+{% for server in [ntpsec_client_servers] | flatten %}
+server {{ server }} nts
+{% endfor %}
+
+# Disallow configuration or ntpq except from localhost.
+restrict -4 default kod limited nomodify noquery
+restrict -6 default kod limited nomodify noquery
+restrict 127.0.0.1
+restrict -6 ::1

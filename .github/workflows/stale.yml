@@ -1,0 +1,40 @@
+---
+name: Close inactive issues
+'on':
+  schedule:
+    - cron: "55 15 * * 6"  # semi-random time
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v8
+        with:
+          days-before-stale: 120
+          days-before-close: 60
+          exempt-issue-labels: bug,pinned,security,planned
+          exempt-pr-labels: bug,pinned,security,planned
+          stale-issue-label: "stale"
+          stale-pr-label: "stale"
+          stale-issue-message: |
+            This issue has been marked 'stale' for lack of recent activity.<br>
+            If there's no further activity:<br>
+            Issue closes in 30 days.<br>
+            Thank you for your contribution!
+          close-issue-message: |
+            This issue has been closed for inactivity.<br>
+            If you feel this is in error:<br>
+            Please reopen issue or file new issue with relevant details.
+          stale-pr-message: |
+            This pr has been marked 'stale' for lack of recent activity.<br>
+            If there is no further activity:<br>
+            Issue closes in 30 days.<br>
+            Thank you for your contribution!
+          close-pr-message: |
+            This PR has been closed for inactivity.<br>
+            If you feel this is in error:<br>
+            Please reopen issue or file new issue with relevant details.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

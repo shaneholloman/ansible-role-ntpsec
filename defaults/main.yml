@@ -1,0 +1,13 @@
+---
+# defaults file for roles/shaneholloman.ntpsec
+
+ntpsec_client_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+  - 3.pool.ntp.org
+
+ntpsec_client_service_name: 'ntpd'
+ntpsec_client_config_file: '/etc/ntp.conf'
+ntpsec_client_config_dir: '/etc/ntp.d'
+ntpsec_client_drift_file: '/var/lib/ntp/ntp.drift'
