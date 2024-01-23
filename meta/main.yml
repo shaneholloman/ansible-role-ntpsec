@@ -5,7 +5,7 @@ galaxy_info:
   author: "shaneholloman"
   description: ntpsec for Linux specifically debian family at this time.
   company: "shaneholloman"
-  license: "license (BSD, MIT)"
+  license: "license (Unlicense)"
 
   platforms:
     - name: Ubuntu

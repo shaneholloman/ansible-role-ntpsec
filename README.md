@@ -59,7 +59,7 @@ or just:
 
 ## License
 
-MIT / BSD
+Unlicense
 
 ## Author Information
 
